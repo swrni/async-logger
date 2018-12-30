@@ -1,0 +1,7 @@
+makefiles/
+*.exe
+*.o
+.gitignore~
+*.swp
+*.un~
+
