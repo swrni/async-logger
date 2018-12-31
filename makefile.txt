@@ -1,57 +1,23 @@
 COMPILER = g++
 FLAGS = -g -Wall -std=c++17
-SOURCES = main.cpp queue_test.cpp
+
+SOURCES = main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = async_logger.exe
-TESTABLES = queue_test
-REBUILDABLES = $(OBJECTS) $(LINK_TARGET)
+
+TEST_SOURCE = queue_test.cpp
+TEST_OBJECTS = $(TEST_SOURCE:.cpp=.o)
+TEST_EXECUTABLE = $(TEST_SOURCE:.cpp=.exe)
 
 all: $(EXECUTABLE)
 
 test:
-	$(COMPILER) $(FLAGS) -c $(TESTABLES).cpp
-	$(COMPILER) -o $(TESTABLES).exe $(TESTABLES).o
-	powershell.exe -Command "./$(TESTABLES).exe"
+	$(COMPILER) $(FLAGS) -c $(TEST_SOURCE)
+	$(COMPILER) -o $(TEST_EXECUTABLE) $(TEST_OBJECTS)
+	powershell.exe -Command "./$(TEST_EXECUTABLE)"
 
 $(EXECUTABLE): $(OBJECTS)
 	$(COMPILER) $(FLAGS) $@ $<
 
 $(OBJECTS): $(SOURCES)
 	$(COMPILER) $(FLAGS) -c $<
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# $@ expands to the target, here: "async_logger.exe".
-# $^ expands to the dependencies, here: "Queue.o" and "main.o".
-# -g generate addictional symbolic debugging information.
-# $(LINK_TARGET): $(OBJECTS)
-# 	g++.exe -std=c++17 -Wall -g -o $@ $^
-
-# Use "*.o" files as targets, and "*.cpp" as dependency.
-# $@ expands to the target, here: "*.o".
-# $< expands to the dependency, here: "*.cpp".
-# %.o: %.cpp
-# 	g++.exe -g -o $@ -c $<
-
-# These are passed to the previous rule.
-# main.o: main.cpp Queue.hpp
-# Queue.o: Queue.hpp
