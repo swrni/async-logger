@@ -1,7 +1,7 @@
-makefiles/
+.vscode/
+makefile
 *.exe
 *.o
 .gitignore~
 *.swp
 *.un~
-
