@@ -1,23 +1,10 @@
 COMPILER = g++
-FLAGS = -g -Wall -std=c++17
-
+FLAGS = -g3 -Wall -Werror -Wextra -Wpedantic -std=c++17
+EXECUTABLE = async_logger.exe
 SOURCES = main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
-EXECUTABLE = async_logger.exe
 
-TEST_SOURCE = queue_test.cpp
-TEST_OBJECTS = $(TEST_SOURCE:.cpp=.o)
-TEST_EXECUTABLE = $(TEST_SOURCE:.cpp=.exe)
-
-all: $(EXECUTABLE)
-
-test:
-	$(COMPILER) $(FLAGS) -c $(TEST_SOURCE)
-	$(COMPILER) -o $(TEST_EXECUTABLE) $(TEST_OBJECTS)
-	powershell.exe -Command "./$(TEST_EXECUTABLE)"
-
-$(EXECUTABLE): $(OBJECTS)
-	$(COMPILER) $(FLAGS) $@ $<
-
-$(OBJECTS): $(SOURCES)
-	$(COMPILER) $(FLAGS) -c $<
+$(EXECUTABLE):
+	$(COMPILER) $(FLAGS) -c main.cpp
+	$(COMPILER) -o $(EXECUTABLE) $(OBJECTS)
+	powershell.exe -Command "./$(EXECUTABLE)"
