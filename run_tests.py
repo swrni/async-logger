@@ -12,7 +12,7 @@ here = os.getcwd()
 shutil.copyfile(os.path.join(here, "makefile.txt"),
 				os.path.join(here, "makefile"))
 
-command = ["make"] + sys.argv[1:]
+command = ["make", "--warn-undefined-variables", "--always-make"] + sys.argv[1:]
 
 print("Running command: %s" % command)
 subprocess.run(command)
