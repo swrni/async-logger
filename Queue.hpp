@@ -6,6 +6,7 @@
 #include <thread>
 #include <condition_variable>
 #include <vector>
+#include <chrono>
 
 /*
 */
@@ -37,44 +38,83 @@ class SyncItem {
 		std::mutex mutex_;
 };
 
+// using Duration = std::chrono::duration<int>;
+
+template <typename TimeType, int TimeCount>
+struct Duration {};
+
+using DurationSecond = Duration<std::chrono::seconds, 1>;
+
+#include <exception>
+struct TimeOutException : public std::exception {
+    const char* what() const throw() {
+        return "timeout exceeded.";
+    }
+};
+
 // Check: http://ithare.com/implementing-queues-for-event-driven-programs/
-template <typename Item, int max_size, typename Container = std::vector<Item>>
+template <  typename Item,
+            int max_size,
+            // template<typename,typename>
+            // typename DefaultDuration,
+            typename Container = std::vector<Item>
+            // typename Duration = std::chrono::milliseconds,
+            // int Duration = 100
+            >
 class Queue {
 	public:
 		Queue() : items_( max_size ) { items_.resize( max_size ); }
-		void Add( Item item ) {
+        template <typename Duration>
+		bool Add( Item item, Duration cw_wait_duration ) {
 			{
 				std::unique_lock<std::mutex> lock( item_list_mutex_ );
 
-				while ( !items_[ add_index_ ].empty_ ) {
-					item_popped_cw_.wait( lock );
+                const auto place_available = [ this ]() {
+                    return items_[ add_index_ ].empty_;
+                };
+                if ( !item_popped_cw_.wait_for( lock, cw_wait_duration, place_available ) ) {
+                    return false;
 				}
-				items_[ add_index_++ ] = ItemWrapper{ item, false };
-				if ( add_index_ == max_size ) {
-					add_index_ = 0;
-				}
+
+                items_[ add_index_++ ] = ItemWrapper{ item, false };
+                if ( add_index_ == max_size ) {
+                    add_index_ = 0;
+                }
 			}
 			item_added_cw_.notify_one();
+            return true;
 		}
 
-        Item Pop() {
+        template <typename Duration>
+        Item Pop( Duration cw_wait_duration = {} ) {
             Item item_to_return;
 			{
 				std::unique_lock<std::mutex> lock( item_list_mutex_ );
 
-				while ( items_[ pop_index_ ].empty_ ) {
-					item_added_cw_.wait( lock );
-				}
-				auto& item_ref = items_[ pop_index_++ ];
-				if ( pop_index_ == max_size ) {
-					pop_index_ = 0;
+                const auto item_available = [ this ]() {
+                    return !items_[ pop_index_ ].empty_;
+                };
+                if ( !item_added_cw_.wait_for( lock, cw_wait_duration, item_available ) ) {
+                    throw TimeOutException{};
 				}
 
-				item_ref.empty_ = true;
-                item_to_return = Item{ item_ref.item_ };
+                items_[ pop_index_ ].empty_ = true;
+                item_to_return = std::move( items_[ pop_index_ ].item_ );
+
+				if ( ++pop_index_ == max_size ) {
+					pop_index_ = 0;
+				}
 			}
 			item_popped_cw_.notify_one();
             return item_to_return;
+        }
+
+        int Items() {
+            std::scoped_lock lock( item_list_mutex_ );
+            if ( add_index_ < pop_index_ ) {
+                return add_index_ + max_size - pop_index_;
+            }
+            return add_index_ - pop_index_;
         }
 
 	private:
